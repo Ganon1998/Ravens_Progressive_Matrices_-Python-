@@ -19,7 +19,7 @@ class TwoXTwo_Solver(object):
         if dpr_AB <= 0.0:
             index = 0
             i = 1
-            while i <= 8:
+            while i <= 6:
                 img_path = problem.figures.get(str(i)).visualFilename
                 imageSolution = Image.open(img_path).convert("L")
 
@@ -39,7 +39,7 @@ class TwoXTwo_Solver(object):
             index = 0
             max = 10000.0
             i = 1
-            while i <= 8:
+            while i <= 6:
                 img_path = self.Problem.figures.get(str(i)).visualFilename
                 imageSolution = Image.open(img_path).convert("L")
 
