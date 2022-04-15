@@ -76,7 +76,6 @@ class ImageAnalysis():
 
 
 
-
     def dark_pixel_percentage(self, image):
         pixels = image.getdata()
         dark = 0
@@ -87,35 +86,8 @@ class ImageAnalysis():
         return 100.0 * (dark / float(n))
 
 
-    def black_pixel_distance(self, image, direction, metric):
-        if direction == "right":
-            image = image.transpose(Image.FLIP_LEFT_RIGHT)
-        elif direction == "top":
-            image = image.rotate(90)
-        elif direction == "bottom":
-            image = image.rotate(-90)
-        pixels = image.load()
-        distances = []
-        for i in range(0, image.size[0]):
-            for j in range(0, image.size[1]):
-                pixel = pixels[i, j]
-                # If a non-white pixel is reached, return it
-                if pixel != 255:
-                    distances.append(j)
-                    break
-        if distances != []:
-            if metric == "min":
-                return min(distances)
-            elif metric == "max":
-                return max(distances)
-            elif metric == "avg":
-                return sum(distances) / len(distances)
-        else:
-            return 0
 
-
-
-    def Contours_Analysis(self, PathA, PathC, Problem):
+    def Contours_Analysis(self, PathA, PathC, banned, Problem):
 
         # turns image_path into array
         imA = cv2.imread(PathA)
@@ -144,10 +116,13 @@ class ImageAnalysis():
 
 
         # if there are shapes just being moved around
-        # compare shapes using area
+        # if there are the same number of shapes from image A to image C
         if len(contoursC) == len(contoursA):
             i = 1
             while i <= 8:
+                if i in banned:
+                    i += 1
+                    continue
                 img_path = Problem.figures.get(str(i)).visualFilename
                 imageSolution = cv2.imread(img_path)
                 imgrayS = cv2.cvtColor(imageSolution, cv2.COLOR_BGR2GRAY)
@@ -158,10 +133,11 @@ class ImageAnalysis():
 
                 if len(contoursS) == len(contoursC):
                     match = True
-                    # check if the shapes are the same
+                    # check if the shapes in image C are the same in the next image
                     for j in range(len(contoursC)):
                         if j == 0:
                             continue
+                        # if the object found in image C does not match the area of an object in image A
                         if cv2.contourArea(contoursC[j]) != cv2.contourArea(contoursS[j]):
                             match = False
                             break
@@ -171,9 +147,14 @@ class ImageAnalysis():
 
                 i += 1
 
+
+        ### if there are more objects in image C
         elif len(contoursC) > len(contoursA):
             i = 1
             while i <= 8:
+                if i in banned:
+                    i += 1
+                    continue
                 img_path = Problem.figures.get(str(i)).visualFilename
                 imageSolution = cv2.imread(img_path)
                 imgrayS = cv2.cvtColor(imageSolution, cv2.COLOR_BGR2GRAY)
@@ -182,7 +163,7 @@ class ImageAnalysis():
                 # the first contour is always the Frame of the image itself
                 contoursS, hierarchyS = cv2.findContours(threshS, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-                if len(contoursS) > len(contoursC):
+                if len(contoursS) >= len(contoursC):
                     match = True
                     # check if the shapes are the same
                     for j in range(len(contoursC)):
@@ -200,6 +181,9 @@ class ImageAnalysis():
         elif len(contoursC) < len(contoursA):
             i = 1
             while i <= 8:
+                if i in banned:
+                    i += 1
+                    continue
                 img_path = Problem.figures.get(str(i)).visualFilename
                 imageSolution = cv2.imread(img_path)
                 imgrayS = cv2.cvtColor(imageSolution, cv2.COLOR_BGR2GRAY)
@@ -208,7 +192,7 @@ class ImageAnalysis():
                 # the first contour is always the Frame of the image itself
                 contoursS, hierarchyS = cv2.findContours(threshS, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-                if len(contoursS) < len(contoursC) and len(contoursS) != 0:
+                if len(contoursS) <= len(contoursC) and len(contoursS) != 0:
                     match = True
                     # check if the shapes are the same
                     for j in range(len(contoursS)):
@@ -285,3 +269,32 @@ class ImageAnalysis():
             else:
                 cv2.putText(img, 'circle', (x, y),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+
+
+    '''This may bring something....it's called an Intersection Pixel Ratio. Basically compares the pixel locations'''
+    ''' image_a = ab, 
+    image_b = bc, 
+    iamge_c = ac'''
+
+    ############# do IPR analysis
+    # IPR ANALYZES IF THE AND OF A B HAS SOME CONNECTION TO C
+
+    def Similarity_Check_3x3_IPR(self, image_a, image_b, image_c):
+        a_and_b = ImageChops.add(image_a, image_b)
+        list_a_and_b = [self.RGB_to_Binary(pixel) for pixel in list(a_and_b.getdata())]
+        list_c = [self.RGB_to_Binary(pixel) for pixel in list(image_c.getdata())]
+        score_ipr = 100 * len([i for i, j in zip(list_a_and_b, list_c) if i == j]) / len(list_a_and_b)
+        return score_ipr
+
+
+    # the arguments are arrays
+    def AND_images(self, image_a, image_b):
+        return ImageChops.add(image_a, image_b)
+
+    def OR_images(self, image_a, image_b):
+        return ImageChops.multiply(image_a, image_b)
+
+    def XOR_images(self, image_a, image_b):
+        image_diff = ImageChops.difference(image_a, image_b)
+        return ImageChops.invert(image_diff)

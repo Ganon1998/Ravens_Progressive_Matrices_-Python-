@@ -191,4 +191,4 @@ class TwoXTwo_Solver(object):
             else:
                 ###### if none of these work try examinig a more complicated transformation
                 ############### one thing that can be done is calculuating thej ratio of dark pixels to white pixels in an image
-                return self.InDepth_Transformation_Analysis(problem, image_analyzer, A, B, C)
+                return self.InDepth_Transformation_Analysis(problem, image_analyzer, imageA, imageB, imageC)

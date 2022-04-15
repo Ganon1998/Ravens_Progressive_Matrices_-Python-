@@ -28,7 +28,6 @@ class Agent:
         self.ProblemName = ""
 
 
-
     def CheckBasics(self, problem):
 
         if problem.problemType == "2x2":
@@ -47,7 +46,12 @@ class Agent:
 
         endTime = time.perf_counter()
         self.Time = endTime - startTime
-        name = problem.name[0] + " " + problem.name[-4:]
-        self.ProblemName = name
+
+        if problem.name[-4] == "D":
+            name = problem.name[0] + " " + problem.name[-4:]
+            self.ProblemName = name
+        else:
+            self.Time = 0.0
+            self.ProblemName = ""
 
         return answer if answer is not None else -1
