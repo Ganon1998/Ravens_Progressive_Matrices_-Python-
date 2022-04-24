@@ -17,6 +17,7 @@ import time
 from TwoXTwo_Solver import TwoXTwo_Solver
 from ThreeXThree_Solver import ThreeXThree_Solver
 
+
 class Agent:
     # The default constructor for your Agent. Make sure to execute any
     # processing necessary before your Agent starts solving problems here.
@@ -24,8 +25,21 @@ class Agent:
     # Do not add any variables to this signature; they will not be used by
     # main().
     def __init__(self):
-        self.Time = 0.0
-        self.ProblemName = ""
+        self.Time = []
+        self.ProblemName = []
+        self.AgentAnswers = []
+        self.ColorsB = ['green', 'green', 'green', 'green', 'green', 'green', 'green', 'green', 'red', 'green', 'green','green']
+        self.ColorsBC = ['red', 'red', 'red', 'red', 'red', 'red', 'green', 'green', 'green', 'green', 'green', 'green']
+
+        self.ColorsC = ['green', 'green', 'green', 'green', 'green', 'green', 'green', 'green', 'red', 'green', 'green','green']
+        self.ColorsCC = ['red', 'red', 'red', 'green', 'green', 'red', 'red', 'red', 'red', 'red', 'red', 'red']
+
+        self.ColorsD = ['green', 'green', 'green', 'green', 'green', 'green', 'green', 'green', 'green', 'green', 'green','green']
+        self.ColorsDC = ['red', 'red', 'green', 'green', 'red', 'red', 'red', 'red', 'red', 'red', 'red', 'red']
+
+        self.ColorsE = ['green', 'green', 'green', 'red', 'green', 'green', 'green', 'green', 'green', 'green', 'green','green']
+        self.ColorsEC = ['green', 'red', 'green', 'red', 'green', 'red', 'red', 'red', 'red', 'red', 'red', 'green']
+
 
 
     def CheckBasics(self, problem):
@@ -44,14 +58,13 @@ class Agent:
 
         answer = self.CheckBasics(problem)
 
+        if "Challenge Problem E" in problem.name:
+            endTime = time.perf_counter()
+            self.Time.append(endTime - startTime)
+
+            name = problem.name[-4:]
+            self.ProblemName.append(name)
+            return answer if answer is not None else -1
+
         endTime = time.perf_counter()
-        self.Time = endTime - startTime
-
-        if problem.name[-4] == "D":
-            name = problem.name[0] + " " + problem.name[-4:]
-            self.ProblemName = name
-        else:
-            self.Time = 0.0
-            self.ProblemName = ""
-
         return answer if answer is not None else -1

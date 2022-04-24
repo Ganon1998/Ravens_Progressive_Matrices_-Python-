@@ -2,10 +2,137 @@ from PIL import Image
 from PIL import ImageChops
 import cv2
 import numpy
-
-
+import random
 
 class ImageAnalysis():
+
+    def StartBan(self, problem):
+        A = "Problems/" + problem.problemSetName + "/" + problem.name + "/A.png"
+        B = "Problems/" + problem.problemSetName + "/" + problem.name + "/B.png"
+        C = "Problems/" + problem.problemSetName + "/" + problem.name + "/C.png"
+
+        D = "Problems/" + problem.problemSetName + "/" + problem.name + "/D.png"
+        E = "Problems/" + problem.problemSetName + "/" + problem.name + "/E.png"
+        F = "Problems/" + problem.problemSetName + "/" + problem.name + "/F.png"
+
+        G = "Problems/" + problem.problemSetName + "/" + problem.name + "/G.png"
+        H = "Problems/" + problem.problemSetName + "/" + problem.name + "/H.png"
+
+        imageA = Image.open(A).convert("L")
+        imageB = Image.open(B).convert("L")
+        imageC = Image.open(C).convert("L")
+
+        imageD = Image.open(D).convert("L")
+        imageE = Image.open(E).convert("L")
+        imageF = Image.open(F).convert("L")
+
+        imageG = Image.open(G).convert("L")
+        imageH = Image.open(H).convert("L")
+
+        return [imageA, imageB, imageC, imageD, imageE, imageF, imageG, imageH]
+
+
+    def DPR_Analysis2x2(self, A, B, C, problem):
+        imageA = Image.open(A).convert("L")
+        imageB = Image.open(B).convert("L")
+        imageC = Image.open(C).convert("L")
+
+        dpr_AB = self.dark_pixel_percentage(imageA) - self.dark_pixel_percentage(imageB)
+
+        # if the ratio decreases from A to B to C but by an INSANE amount
+        if dpr_AB <= 0.0:
+            index = 0
+            i = 1
+            while i <= 6:
+                img_path = problem.figures.get(str(i)).visualFilename
+                imageSolution = Image.open(img_path).convert("L")
+                dpr_CI = self.dark_pixel_percentage(imageC) - self.dark_pixel_percentage(
+                    imageSolution)
+
+                if dpr_AB - 3.8 <= dpr_CI <= dpr_AB + 3.8:
+                    index = i
+
+                i += 1
+
+            if index != 0:
+                return index
+
+        # if the ratio increases from A to B to C
+        if dpr_AB > 0:
+            index = 0
+
+            i = 1
+            while i <= 6:
+                img_path = problem.figures.get(str(i)).visualFilename
+                imageSolution = Image.open(img_path).convert("L")
+                dpr_CI = self.dark_pixel_percentage(imageC) - self.dark_pixel_percentage(
+                    imageSolution)
+
+                if dpr_AB - 3.8 <= dpr_CI <= dpr_AB + 3.8:
+                    index = i
+                i += 1
+
+            if index != 0:
+                return index
+
+        return random.randint(1, 6)
+
+
+    ######### ADD DPR FOR COLUMN RELATIONSHIPS!!!
+    def DPR_Analysis_SameShape(self, A, B, C, problem):
+        imageA = Image.open(A).convert("L")
+        imageB = Image.open(B).convert("L")
+        imageC = Image.open(C).convert("L")
+
+        dpr_AB = self.dark_pixel_percentage(imageA) - self.dark_pixel_percentage(imageB)
+
+        #dpr_AC = self.dark_pixel_percentage(imageA) - self.dark_pixel_percentage(imageC)
+        # if the ratio decreases from A to B to C but by an INSANE amount
+        if dpr_AB <= 0.0:
+            index = 0
+            i = 1
+            while i <= 6:
+                img_path = problem.figures.get(str(i)).visualFilename
+                if self.SameShape(img_path, C) == False:
+                    i += 1
+                    continue
+
+                imageSolution = Image.open(img_path).convert("L")
+                dpr_CI = self.dark_pixel_percentage(imageC) - self.dark_pixel_percentage(
+                    imageSolution)
+
+                if dpr_AB - 3.8 <= dpr_CI <= dpr_AB + 3.8:
+                    index = i
+
+                i += 1
+
+            if index != 0:
+                return index
+
+        # if the ratio increases from A to B to C
+        if dpr_AB >= 0:
+            index = 0
+            i = 1
+            while i <= 6:
+                img_path = problem.figures.get(str(i)).visualFilename
+                if self.SameShape(img_path, C) == False:
+                    i += 1
+                    continue
+                imageSolution = Image.open(img_path).convert("L")
+                dpr_CI = self.dark_pixel_percentage(imageC) - self.dark_pixel_percentage(
+                    imageSolution)
+
+                if dpr_AB - 3.8 <= dpr_CI <= dpr_AB + 3.8:
+                    index = i
+                i += 1
+
+            if index != 0:
+                return index
+
+        return random.randint(1, 6)
+
+
+
 
     # return the percent difference between the two images
     def PercentDiff(self, ModiImage, imageB):
@@ -38,35 +165,35 @@ class ImageAnalysis():
             return True
         return False
 
-    def Rotation(self, imageA, imageB):
+    def Rotation(self, imageA, imageB, threshold):
 
         #### if rotation value is ambigous append them to this array
         rotationValues = []
         rotationBool = False
 
 
-        if self.PercentDiff(imageA.rotate(45), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(45), imageB) <= threshold:
             rotationValues.append(45)
 
-        if self.PercentDiff(imageA.rotate(90), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(90), imageB) <= threshold:
             rotationValues.append(90)
 
-        if self.PercentDiff(imageA.rotate(135), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(135), imageB) <= threshold:
             rotationValues.append(135)
 
-        if self.PercentDiff(imageA.rotate(180), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(180), imageB) <= threshold:
             rotationValues.append(180)
 
-        if self.PercentDiff(imageA.rotate(-45), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(-45), imageB) <= threshold:
             rotationValues.append(-45)
 
-        if self.PercentDiff(imageA.rotate(-90), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(-90), imageB) <= threshold:
             rotationValues.append(-90)
 
-        if self.PercentDiff(imageA.rotate(-135), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(-135), imageB) <= threshold:
             rotationValues.append(-135)
 
-        if self.PercentDiff(imageA.rotate(-180), imageB) <= 5:
+        if self.PercentDiff(imageA.rotate(-180), imageB) <= threshold:
             rotationValues.append(-180)
 
         if len(rotationValues) > 0:
@@ -87,205 +214,827 @@ class ImageAnalysis():
 
 
 
-    def Contours_Analysis(self, PathA, PathC, banned, Problem):
+    def CheckOrientation(self, contourA, contourC):
 
-        # turns image_path into array
-        imA = cv2.imread(PathA)
-        imgrayA = cv2.cvtColor(imA, cv2.COLOR_BGR2GRAY)
-        ret, thresh = cv2.threshold(imgrayA, 127, 255, 0)
+        # returns the angle of the the contour
 
-        # the first contour is always the Frame of the image itself
-        contoursA, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        if len(contourA) < 5 or len(contourC) < 5:
+            return 0
 
+        (x, y), (MA, ma), angle = cv2.fitEllipse(contourA)
+        (x, y), (MA, ma), angleC = cv2.fitEllipse(contourC)
 
-        # turns image_path into array
-        imC = cv2.imread(PathC)
-        imgrayC = cv2.cvtColor(imC, cv2.COLOR_BGR2GRAY)
-        retC, threshC = cv2.threshold(imgrayC, 127, 255, 0)
-
-        # the first contour is always the Frame of the image itself
-        contoursC, hierarchyC = cv2.findContours(threshC, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-        #area = cv2.contourArea(contoursA[1])
-
-        # print(len(contoursA))
-        # cv2.drawContours(imA, contoursA, -1, (0, 255, 0), 3)
-        # cv.imshow('Image', imA)
-        # cv.waitKey(0)
-        # cv.destroyAllWindows()
+        if angle == angleC:
+            return 0
+        else:
+            if angleC < angle:
+                return angle - angleC
+            else:
+                return angleC - angle
 
 
-        # if there are shapes just being moved around
-        # if there are the same number of shapes from image A to image C
-        if len(contoursC) == len(contoursA):
-            i = 1
-            while i <= 8:
-                if i in banned:
+
+
+    def SameShape(self, imgA_path, imgC_path):
+
+        # reading image
+        img1 = cv2.imread(imgA_path)
+        img2 = cv2.imread(imgC_path)
+
+        # converting image into grayscale image
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+        # setting threshold of gray image
+        _, threshold1 = cv2.threshold(gray1, 127, 255, cv2.THRESH_BINARY)
+        _, threshold2 = cv2.threshold(gray2, 127, 255, cv2.THRESH_BINARY)
+
+        # using a findContours() function
+        contoursA, _ = cv2.findContours(threshold1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contoursC, _ = cv2.findContours(threshold2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        if len(contoursA) <= 1 or len(contoursC) <= 1:
+            return False
+
+        # get the shape of the contours
+        approxA = cv2.approxPolyDP(contoursA[1], 0.01 * cv2.arcLength(contoursA[1], True), True)
+        approxC = cv2.approxPolyDP(contoursC[1], 0.01 * cv2.arcLength(contoursC[1], True), True)
+
+        if len(approxA) != len(approxC):
+            return False
+        else:
+            return True
+
+
+
+
+    def CheckSidesAdded(self, contourG, contourA, contourC, problem):
+        # get the shape of the contours
+
+        approxA = cv2.approxPolyDP(contourA, 0.01 * cv2.arcLength(contourA, True), True)
+        approxC = cv2.approxPolyDP(contourC, 0.01 * cv2.arcLength(contourC, True), True)
+        approxG = cv2.approxPolyDP(contourG, 0.01 * cv2.arcLength(contourA, True), True)
+
+
+        ################### more sides are being added to the shape in the next image and the next image ISN'T A CIRCLE
+        if len(approxA) < len(approxC) and len(approxC) <= 15:
+
+            factorIncrease = len(approxC) - len(approxA)
+
+            if problem.problemType == "2x2":
+                i = 1
+                while i <= 6:
+                    img1 = cv2.imread(problem.figures.get(str(i)).visualFilename)
+
+                    # converting image into grayscale image
+                    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+
+                    # setting threshold of gray image
+                    _, threshold1 = cv2.threshold(gray1, 127, 255, cv2.THRESH_BINARY)
+
+                    # using a findContours() function
+                    contoursI, _ = cv2.findContours(threshold1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                    ## if the image contains only 1 shape whether it's filled or not
+                    if len(contoursI) >= 2:
+                        contour = contoursI[1]
+                        approxI = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
+
+                        if len(approxG) + factorIncrease == len(approxI):
+                            return i
                     i += 1
-                    continue
-                img_path = Problem.figures.get(str(i)).visualFilename
-                imageSolution = cv2.imread(img_path)
-                imgrayS = cv2.cvtColor(imageSolution, cv2.COLOR_BGR2GRAY)
-                retS, threshS = cv2.threshold(imgrayS, 127, 255, 0)
 
-                # the first contour is always the Frame of the image itself
-                contoursS, hierarchyS = cv2.findContours(threshS, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            elif problem.problemType == "3x3":
+                i = 1
+                while i <= 8:
+                    img1 = cv2.imread(problem.figures.get(str(i)).visualFilename)
 
-                if len(contoursS) == len(contoursC):
-                    match = True
-                    # check if the shapes in image C are the same in the next image
-                    for j in range(len(contoursC)):
-                        if j == 0:
-                            continue
-                        # if the object found in image C does not match the area of an object in image A
-                        if cv2.contourArea(contoursC[j]) != cv2.contourArea(contoursS[j]):
-                            match = False
-                            break
+                    # converting image into grayscale image
+                    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 
-                    if match:
-                        return i
+                    # setting threshold of gray image
+                    _, threshold1 = cv2.threshold(gray1, 127, 255, cv2.THRESH_BINARY)
 
-                i += 1
+                    # using a findContours() function
+                    contoursI, _ = cv2.findContours(threshold1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+                    if len(contoursI) >= 2:
+                        shape = contoursI[1]
+                        approxI = cv2.approxPolyDP(shape, 0.01 * cv2.arcLength(shape, True), True)
 
-        ### if there are more objects in image C
-        elif len(contoursC) > len(contoursA):
-            i = 1
-            while i <= 8:
-                if i in banned:
+                        if len(approxG) + factorIncrease == len(approxI):
+                            return i
                     i += 1
-                    continue
-                img_path = Problem.figures.get(str(i)).visualFilename
-                imageSolution = cv2.imread(img_path)
-                imgrayS = cv2.cvtColor(imageSolution, cv2.COLOR_BGR2GRAY)
-                retS, threshS = cv2.threshold(imgrayS, 127, 255, 0)
 
-                # the first contour is always the Frame of the image itself
-                contoursS, hierarchyS = cv2.findContours(threshS, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        if len(approxA) > len(approxC) and len(approxA) <= 15:
 
-                if len(contoursS) >= len(contoursC):
-                    match = True
-                    # check if the shapes are the same
-                    for j in range(len(contoursC)):
-                        if j == 0:
-                            continue
-                        if cv2.contourArea(contoursC[j]) != cv2.contourArea(contoursS[j]):
-                            match = False
-                            break
+            factorDecrease = len(approxA) - len(approxC)
 
-                    if match:
-                        return i
+            if problem.problemType == "2x2":
+                i = 1
+                while i <= 6:
+                    img1 = cv2.imread(problem.figures.get(str(i)).visualFilename)
 
-                i += 1
+                    # converting image into grayscale image
+                    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 
-        elif len(contoursC) < len(contoursA):
-            i = 1
-            while i <= 8:
-                if i in banned:
+                    # setting threshold of gray image
+                    _, threshold1 = cv2.threshold(gray1, 127, 255, cv2.THRESH_BINARY)
+
+                    # using a findContours() function
+                    contoursI, _ = cv2.findContours(threshold1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                    ## if the image contains only 1 shape
+                    if len(contoursI) >= 2:
+                        contour = contoursI[1]
+                        approxI = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
+                        if len(approxG) - factorDecrease == len(approxI):
+                            return i
                     i += 1
-                    continue
-                img_path = Problem.figures.get(str(i)).visualFilename
-                imageSolution = cv2.imread(img_path)
-                imgrayS = cv2.cvtColor(imageSolution, cv2.COLOR_BGR2GRAY)
-                retS, threshS = cv2.threshold(imgrayS, 127, 255, 0)
 
-                # the first contour is always the Frame of the image itself
-                contoursS, hierarchyS = cv2.findContours(threshS, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            elif problem.problemType == "3x3":
+                i = 1
+                while i <= 8:
+                    img1 = cv2.imread(problem.figures.get(str(i)).visualFilename)
 
-                if len(contoursS) <= len(contoursC) and len(contoursS) != 0:
-                    match = True
-                    # check if the shapes are the same
-                    for j in range(len(contoursS)):
-                        if j == 0:
-                            continue
-                        if cv2.contourArea(contoursC[j]) != cv2.contourArea(contoursS[j]):
-                            match = False
-                            break
+                    # converting image into grayscale image
+                    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 
-                    if match:
-                        return i
+                    # setting threshold of gray image
+                    _, threshold1 = cv2.threshold(gray1, 127, 255, cv2.THRESH_BINARY)
 
-                i += 1
+                    # using a findContours() function
+                    contoursI, _ = cv2.findContours(threshold1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+                    if len(contoursI) >= 2:
+                        contour = contoursI[1]
+                        approxI = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
+
+                        if len(approxG) - factorDecrease == len(approxI):
+                            return i
+                    i += 1
+
+
+        # the shape most likely goes from a circle to something else or vice versa
         return 0
 
 
 
 
+
     # it's here just in case I need it. Take from GeeksForGeeks Shape Detection OpenCV page
-    def Shape_Detection(self, contours, imgA):
+    #### THIS CAN BE USED FOR CHALLENGE E-05 FOR SHAPES ADDING MORE SIDES
+    def ShapeAnalytics(self, problem, imgA, imgC, imgG):
+
+        banned = []
+        if problem.problemType == "3x3":
+            ImageAr = self.StartBan(problem)
+            for i in range(len(ImageAr)):
+                for j in range(1, 9):
+                    img_path = problem.figures.get(str(j)).visualFilename
+                    imageSolution = Image.open(img_path).convert("L")
+
+                    if self.PercentDiff(imageSolution, ImageAr[i]) <= 1.5:
+                        banned.append(j)
+                        break
+
+
+
         # reading image
-        img = cv2.imread(imgA)
+        img1 = cv2.imread(imgA)
+        img2 = cv2.imread(imgC)
+        img3 = cv2.imread(imgG)
 
         # converting image into grayscale image
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+        gray3 = cv2.cvtColor(img3, cv2.COLOR_BGR2GRAY)
 
         # setting threshold of gray image
-        _, threshold = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        _, threshold1 = cv2.threshold(gray1, 127, 255, cv2.THRESH_BINARY)
+        _, threshold2 = cv2.threshold(gray2, 127, 255, cv2.THRESH_BINARY)
+        _, threshold3 = cv2.threshold(gray3, 127, 255, cv2.THRESH_BINARY)
 
         # using a findContours() function
-        contours, _ = cv2.findContours(threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contoursA, _ = cv2.findContours(threshold1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contoursC, _ = cv2.findContours(threshold2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contoursG, _ = cv2.findContours(threshold3, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        i = 0
+        if problem.problemType == "3x3":
+            imageCVB = cv2.imread(problem.figures.get('B').visualFilename)
+            grayB = cv2.cvtColor(imageCVB, cv2.COLOR_BGR2GRAY)
+            _, thresholdB = cv2.threshold(grayB, 127, 255, cv2.THRESH_BINARY)
+            contoursB, _ = cv2.findContours(thresholdB, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        # list for storing names of shapes
-        for contour in contours:
+            imgF = cv2.imread(problem.figures.get('F').visualFilename)
+            imgH = cv2.imread(problem.figures.get('H').visualFilename)
 
-            # here we are ignoring first counter because
-            # findcontour function detects whole image as shape
-            if i == 0:
-                i = 1
-                continue
+            # converting image into grayscale image
+            grayF = cv2.cvtColor(imgF, cv2.COLOR_BGR2GRAY)
+            grayH = cv2.cvtColor(imgH, cv2.COLOR_BGR2GRAY)
 
-            # cv2.approxPloyDP() function to approximate the shape
-            approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
+            # setting threshold of gray image
+            _, thresholdF = cv2.threshold(grayF, 127, 255, cv2.THRESH_BINARY)
+            _, thresholdH = cv2.threshold(grayH, 127, 255, cv2.THRESH_BINARY)
 
-            # using drawContours() function
-            # cv2.drawContours(img, [contour], 0, (0, 0, 255), 5)
+            # using a findContours() function
+            contoursF, _ = cv2.findContours(thresholdF, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            contoursH, _ = cv2.findContours(thresholdH, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-            # finding center point of shape
-            M = cv2.moments(contour)
-            if M['m00'] != 0.0:
-                x = int(M['m10'] / M['m00'])
-                y = int(M['m01'] / M['m00'])
+            imageG = cv2.imread(problem.figures.get('G').visualFilename)
+            grayG = cv2.cvtColor(imageG, cv2.COLOR_BGR2GRAY)
+            _, thresholdG = cv2.threshold(grayG, 127, 255, cv2.THRESH_BINARY)
+            contoursG, _ = cv2.findContours(thresholdG, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            shapeG = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursG[1], True), True)
 
-            # putting shape name at center of each shape
-            if len(approx) == 3:
-                cv2.putText(img, 'Triangle', (x, y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-            elif len(approx) == 4:
-                cv2.putText(img, 'Quadrilateral', (x, y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-            elif len(approx) == 5:
-                cv2.putText(img, 'Pentagon', (x, y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-            elif len(approx) == 6:
-                cv2.putText(img, 'Hexagon', (x, y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        #### checking VERY SPECIFIC Conditions like E-12 and D-12
+        if problem.problemType == "3x3":
 
+            #### E-12
+            if len(contoursA) == 4 and len(contoursB) == 2 and len(contoursC) == 3:
+                shapeB = cv2.approxPolyDP(contoursB[1], 0.01 * cv2.arcLength(contoursB[1], True), True)
+                shapeF = cv2.approxPolyDP(contoursF[1], 0.01 * cv2.arcLength(contoursF[1], True), True)
+                shapeH = cv2.approxPolyDP(contoursH[1], 0.01 * cv2.arcLength(contoursH[1], True), True)
+
+
+                if self.CheckOrientation(contoursA[1], contoursB[1]) == 0 and len(shapeB) == len(shapeH) and len(shapeB) == len(shapeF):
+
+
+                    i = 1
+                    index = 0
+                    while i <= 8:
+
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursB):
+                            i += 1
+                            continue
+
+
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+                        imageI = Image.open(problem.figures.get(str(i)).visualFilename).convert("L")
+                        imageB = Image.open(problem.figures.get('B').visualFilename).convert("L")
+
+
+                        if len(shapeF) == len(I1) and self.PercentDiff(imageI, imageB.transpose(method=Image.FLIP_TOP_BOTTOM)) <= 0.8:
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+
+
+
+            #### D-12
+            elif len(contoursA) == 4 and len(contoursB) == 5 and len(contoursC) >= 6:
+
+                shapeH = cv2.approxPolyDP(contoursH[1], 0.01 * cv2.arcLength(contoursH[1], True), True)
+
+                if len(contoursG) >= 8 and len(contoursH) >= 6:
+                    i = 1
+                    index = 0
+
+                    while i <= 8:
+
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+                        if len(contoursI) == 4 and len(I1) != len(shapeG) and len(I1) != len(shapeH):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+
+
+        if len(contoursA) == 6 and len(contoursC) == 4:
+            if problem.problemType == "3x3":
+
+                shapeA = cv2.approxPolyDP(contoursA[4], 0.01 * cv2.arcLength(contoursA[4], True), True)
+                shapeF = cv2.approxPolyDP(contoursF[3], 0.01 * cv2.arcLength(contoursF[3], True), True)
+                shapeH = cv2.approxPolyDP(contoursH[3], 0.01 * cv2.arcLength(contoursH[3], True), True)
+
+
+                # if the inner shape matches in image F and image H
+                if len(shapeA) == len(shapeF) and len(shapeF) == len(shapeH):
+
+                    shapeB = cv2.approxPolyDP(contoursB[3], 0.01 * cv2.arcLength(contoursB[3], True), True)
+
+                    i = 1
+                    index = 0
+                    while i <= 8:
+
+                        if i in banned:
+                            i += 1
+                            continue
+
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursA):
+                            i += 1
+                            continue
+
+                        I1 = cv2.approxPolyDP(contoursI[4], 0.01 * cv2.arcLength(contoursI[4], True), True)
+
+                        if len(shapeB) == len(I1):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        # print(index)
+                        return index
+
+
+
+        ######### 2x2 PROBLEMS WILL GO HERE SOMETIMES
+
+        ##################### there's only 1 shape in the image ############################
+        ######## the reason why they're length 3 is becaise shape 1 is the frame, shape 2 is teh outline of the object, shape 3 is the shape of the object inside
+        if len(contoursA) == 3 and len(contoursC) == 3:
+
+            approxA = cv2.approxPolyDP(contoursA[1], 0.01 * cv2.arcLength(contoursA[1], True), True)
+            approxC = cv2.approxPolyDP(contoursC[1], 0.01 * cv2.arcLength(contoursC[1], True), True)
+
+            ### if they have the same shape
+            if len(approxA) == len(approxC):
+                angle = self.CheckOrientation(contoursA[1], contoursC[1])
+                return [True, angle, 0]
             else:
-                cv2.putText(img, 'circle', (x, y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                # they don't have the same shape
+                Info = self.CheckSidesAdded(contoursG[1], contoursA[2], contoursC[2], problem)
+                angle = self.CheckOrientation(contoursA[2], contoursC[2])
+
+                return [False, angle, Info]
+
+
+        ######## there's only 1 shape but image C has been filled
+        elif len(contoursA) == 3 and len(contoursC) == 2:
+            approxA = cv2.approxPolyDP(contoursA[1], 0.01 * cv2.arcLength(contoursA[1], True), True)
+            approxC = cv2.approxPolyDP(contoursC[1], 0.01 * cv2.arcLength(contoursC[1], True), True)
+
+            # if the shape in image 1 has been filled
+            if len(approxA) == len(approxC):
+
+                angle = self.CheckOrientation(contoursA[1], contoursC[1])
+
+                if angle == 0.0:
+                    return self.DPR_Analysis_SameShape(imgA, imgC, imgG, problem)
+                else:
+                    return [True, angle, 0]
+            else:
+                Info = self.CheckSidesAdded(contoursG[1], contoursA[1], contoursC[1], problem)
+                if Info != 0:
+                    return Info
+                return self.DPR_Analysis2x2(imgA, imgC, imgG, problem)
+
+
+        ## if there are 2 SHAPES in the image with 1 inside of the other like in Basic D-04,
+        elif len(contoursA) == 4 and len(contoursC) == 4:
+
+            approxA = cv2.approxPolyDP(contoursA[1], 0.01 * cv2.arcLength(contoursA[1], True), True)
+            approxC = cv2.approxPolyDP(contoursC[1], 0.01 * cv2.arcLength(contoursC[1], True), True)
+
+            approxA3 = cv2.approxPolyDP(contoursA[3], 0.01 * cv2.arcLength(contoursA[3], True), True)
+            approxC2 = cv2.approxPolyDP(contoursC[2], 0.01 * cv2.arcLength(contoursC[2], True), True)
+
+            approxAn = cv2.approxPolyDP(contoursA[2], 0.01 * cv2.arcLength(contoursA[2], True), True)
+            approxCn = cv2.approxPolyDP(contoursC[2], 0.01 * cv2.arcLength(contoursC[2], True), True)
+
+            ###### THIS MAINLY PERTAINS TO D-05 WHERE contoursC[2] == contoursA[3] shapewise
+            #########
+
+            if len(approxA) != len(approxC) and len(approxC2) != len(approxA3) and len(approxAn) == len(approxCn):
+                if problem.problemType == "3x3":
+                    i = 1
+                    index = 0
+                    while i <= 8:
+
+                        if i in banned:
+                            i += 1
+                            continue
+
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursA):
+                            i += 1
+                            continue
+
+                        I3 = cv2.approxPolyDP(contoursI[3], 0.01 * cv2.arcLength(contoursI[2], True), True)
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+
+                        if len(approxA) == len(I1) and len(approxA3) == len(I3):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        # print(index)
+                        return index
 
 
 
-    '''This may bring something....it's called an Intersection Pixel Ratio. Basically compares the pixel locations'''
-    ''' image_a = ab, 
-    image_b = bc, 
-    iamge_c = ac'''
+            if len(approxA3) == len(approxC2):
 
-    ############# do IPR analysis
-    # IPR ANALYZES IF THE AND OF A B HAS SOME CONNECTION TO C
+                ########## D-05 GOES HERE
+                if problem.problemType == "3x3":
+                    increase = False
 
-    def Similarity_Check_3x3_IPR(self, image_a, image_b, image_c):
-        a_and_b = ImageChops.add(image_a, image_b)
-        list_a_and_b = [self.RGB_to_Binary(pixel) for pixel in list(a_and_b.getdata())]
-        list_c = [self.RGB_to_Binary(pixel) for pixel in list(image_c.getdata())]
-        score_ipr = 100 * len([i for i, j in zip(list_a_and_b, list_c) if i == j]) / len(list_a_and_b)
-        return score_ipr
+                    if cv2.contourArea(contoursA[1]) > cv2.contourArea(contoursA[1]) and len(approxA) == 4:
+                        increase = True
+
+                    G3 = cv2.approxPolyDP(contoursG[3], 0.01 * cv2.arcLength(contoursG[3], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 8:
+
+                        if i in banned:
+                            i += 1
+                            continue
+
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursG):
+                            i += 1
+                            continue
+
+                        I2 = cv2.approxPolyDP(contoursI[2], 0.01 * cv2.arcLength(contoursI[2], True), True)
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+
+
+                        ###### if the the second shape in I matches the last shape in image G
+                        if increase == True and cv2.contourArea(contoursI[1]) > cv2.contourArea(contoursG[1]) and len(I1) == 4:
+                            index = i
+
+
+                        elif len(G3) == len(I2):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        #print(index)
+                        return index
+
+
+
+            # if shape 1 is different in the next image but shape 2 is the same
+            elif len(approxA) != len(approxC) and len(approxA3) == len(approxC2):
+                if problem.problemType == "3x3":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursG[1], True), True)
+                    G2 = cv2.approxPolyDP(contoursG[3], 0.01 * cv2.arcLength(contoursG[3], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 8:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursG):
+                            i +=1
+                            continue
+
+                        I1= cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+                        I2 = cv2.approxPolyDP(contoursI[3], 0.01 * cv2.arcLength(contoursI[3], True), True)
+
+                        if len(G1) != len(I1) and len(G2) == len(I2):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+
+                if problem.problemType == "2x2":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursG[1], True), True)
+                    G2 = cv2.approxPolyDP(contoursG[3], 0.01 * cv2.arcLength(contoursG[3], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 6:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursG):
+                            i +=1
+                            continue
+
+                        I1= cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+                        I2 = cv2.approxPolyDP(contoursI[3], 0.01 * cv2.arcLength(contoursI[3], True), True)
+
+                        if len(G1) != len(I1) and len(G2) == len(I2):
+                            index = i
+
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+
+            ####### The shapes are staying the same but they're either rotating or scaling
+            if len(approxA) == len(approxC) and len(approxA3) == len(approxC2):
+                if problem.problemType == "3x3":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursG[1], True), True)
+                    G2 = cv2.approxPolyDP(contoursG[3], 0.01 * cv2.arcLength(contoursG[3], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 8:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursG):
+                            i += 1
+                            continue
+
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+                        I2 = cv2.approxPolyDP(contoursI[3], 0.01 * cv2.arcLength(contoursI[3], True), True)
+
+                        if len(G1) == len(I1) and len(G2) == len(I2) and cv2.contourArea(contoursI[1]) > cv2.contourArea(contoursG[1]):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+                if problem.problemType == "2x2":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursG[1], True), True)
+                    G2 = cv2.approxPolyDP(contoursG[3], 0.01 * cv2.arcLength(contoursG[3], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 6:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) != len(contoursG):
+                            i += 1
+                            continue
+
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+                        I2 = cv2.approxPolyDP(contoursI[3], 0.01 * cv2.arcLength(contoursI[3], True), True)
+
+                        if len(G1) == len(I1) and len(G2) == len(I2) and cv2.contourArea(contoursI[1]) > cv2.contourArea(contoursG[1]):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+
+
+        # A shape is removed when going from image 1 to image 2
+        elif len(contoursA) == 4 and len(contoursC) == 3: # and len(contoursG) == 4:
+
+
+            approxA = cv2.approxPolyDP(contoursA[1], 0.01 * cv2.arcLength(contoursA[1], True), True)
+            approxC = cv2.approxPolyDP(contoursC[1], 0.01 * cv2.arcLength(contoursC[1], True), True)
+
+            # even though a shape has been removed, the first shape (outer shape) is the same in images 1 and 2
+            if len(approxA) == len(approxC):
+                if problem.problemType == "3x3":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursG[1], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 8:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                            # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                            # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                            # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+
+                        if len(G1) == len(I1) and len(contoursI) < len(contoursG):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+                if problem.problemType == "2x2":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursA[1], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 6:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+
+                        if len(G1) == len(I1) and len(contoursI) < len(contoursG):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+            if len(approxA) > len(approxC):
+                if problem.problemType == "3x3":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursG[1], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 8:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+
+                        if len(G1) > len(I1) and len(contoursI) < len(contoursG):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+                if problem.problemType == "2x2":
+                    G1 = cv2.approxPolyDP(contoursG[1], 0.01 * cv2.arcLength(contoursA[1], True), True)
+                    i = 1
+                    index = 0
+                    while i <= 6:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        I1 = cv2.approxPolyDP(contoursI[1], 0.01 * cv2.arcLength(contoursI[1], True), True)
+
+                        if len(G1) > len(I1) and len(contoursI) < len(contoursG):
+                            index = i
+
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+
+        ################## THIS IS FOR BASIC D-08 CHECK CONTOURS FROM A TO E ##############
+        elif len(contoursA) == 2:
+
+            if problem.problemType == "3x3":
+
+                imgE = cv2.imread(problem.figures.get('E').visualFilename)
+                        # converting image into grayscale image
+                grayE = cv2.cvtColor(imgE, cv2.COLOR_BGR2GRAY)
+                # setting threshold of gray image
+                _, thresholdE = cv2.threshold(grayE, 127, 255, cv2.THRESH_BINARY)
+                # using a findContours() function
+                contoursE, _ = cv2.findContours(thresholdE, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                if len(contoursA) >= len(contoursE):
+                    i = 1
+                    index = 0
+                    while i <= 8:
+                        img_path = problem.figures.get(str(i)).visualFilename
+
+                        imgI = cv2.imread(img_path)
+                        # converting image into grayscale image
+                        grayI = cv2.cvtColor(imgI, cv2.COLOR_BGR2GRAY)
+
+                        # setting threshold of gray image
+                        _, thresholdI = cv2.threshold(grayI, 127, 255, cv2.THRESH_BINARY)
+
+                        # using a findContours() function
+                        contoursI, _ = cv2.findContours(thresholdI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                        if len(contoursI) == len(contoursA):
+                            if self.SameShape(img_path, problem.figures.get('A').visualFilename) == True and self.SameShape(img_path, problem.figures.get('E').visualFilename) == False:
+                                index = i
+                        i += 1
+
+                    if index != 0:
+                        return index
+
+
+        return [False, 0, 0]
+
+
 
 
     # the arguments are arrays
